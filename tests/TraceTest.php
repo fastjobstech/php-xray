@@ -54,11 +54,10 @@ class TraceTest extends TestCase
         $this->assertRegExp('@^1\-[a-f0-9]{8}\-[a-f0-9]{24}$@', $trace->getTraceId());
     }
 
-    /**
-     * @expectedException \TypeError
-     */
     public function testGivenNullHeaderDoesNotSetId()
     {
+        $this->expectException(\TypeError::class);
+
         $trace = new Trace();
         $trace->setTraceHeader(null);
 
