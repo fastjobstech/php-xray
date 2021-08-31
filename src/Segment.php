@@ -52,6 +52,10 @@ class Segment implements JsonSerializable
      */
     protected $fault = false;
     /**
+     * @var Object
+     */
+    protected $cause = [];
+    /**
      * @var bool
      */
     protected $sampled = false;
@@ -130,6 +134,33 @@ class Segment implements JsonSerializable
     public function setFault(bool $fault)
     {
         $this->fault = $fault;
+
+        return $this;
+    }
+
+    /**
+     * @param $exception
+     * @return static
+     */
+    public function setCause($exception)
+    {
+        $this->cause = [
+            'working_directory' => $exception->getFile(),
+            'exceptions' => [
+                [
+                    'id' => bin2hex(random_bytes(8)),
+                    'message' => $exception->getMessage(),
+                    'type' => get_class($exception),
+                    'stack' => array_map(function($trace, $n) use ($exception) {
+                        return [
+                            'path' => ($n === 0) ? $trace['class'] : $trace['file'],
+                            'line' => ($n === 0) ? $exception->getLine() : $trace['line'],
+                            'label' => $trace['function']
+                        ];
+                    }, $exception->getTrace(), array_keys($exception->getTrace()))
+                ]
+            ]
+        ];
 
         return $this;
     }
@@ -303,6 +334,7 @@ class Segment implements JsonSerializable
             'type' => $this->independent ? 'subsegment' : null,
             'fault' => $this->fault,
             'error' => $this->error,
+            'cause' => $this->cause,
             'annotations' => empty($this->annotations) ? null : $this->annotations,
             'metadata' => empty($this->metadata) ? null : $this->metadata,
             'aws' => $this->serialiseAwsData(),
